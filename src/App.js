@@ -2,6 +2,8 @@ import React, { useState, useEffect} from 'react';
 import io from 'socket.io-client';
 import Plot from 'react-plotly.js';
 
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faPlay, faStop } from '@fortawesome/free-solid-svg-icons'
 
 import Navbar from './components/Navbar';
 const socket = io.connect('http://192.168.1.100:5001');
@@ -9,18 +11,22 @@ const socket = io.connect('http://192.168.1.100:5001');
 function App() {  
 
   const [data, setData] = useState(0.0);
-  const [data2, setData2] = useState([]);
+  const [referencia, setReferencia] = useState([]);
+  
   const [relay_1, setRelay_1] = useState(0);
   const [relay_2, setRelay_2] = useState(0);
   const [relay_3, setRelay_3] = useState(0);
+
+  const [start, setStart] = useState(false);
 
   const [reference, setReference] = useState('');
 
   // 1. listen for data from the server (Raspberry Pi)
   useEffect(() => {
     socket.on('/v1.0/iot-control/get_status_controller', (res) => {
-      setData2(currentData => [...currentData, res.adc_value]);
+      setReferencia(currentData => [...currentData, res.adc_value]);
       setData(res.adc_value);
+      setStart(res.transmition_status);
     });   
   }, []);
 
@@ -37,26 +43,18 @@ function App() {
     });
   }
 
-  
-
   return (
     <>
-      <Navbar />
-      <div className="container text-center">
-        <h1>ADC Voltage: {data} </h1>
-        <button className="btn btn-dark" onClick={startTransmission}>
-          Iniciar adquisición de datos
-        </button>
-        <button className="btn btn-dark" onClick={stopTransmission}>
-          Detener adquisición de datos
-        </button>
+      <Navbar />     
+
+      <div className="container text-center pt-3">     
 
         <div className="row">
           <div className="col-sm-4">
             <div className="card">
               <div className="card-body">
                 <h5 className="card-title">
-                  Parámetros del controlador y la planta
+                  Referencia de la planta
                 </h5>            
                 
                 <div className="input-group mb-3">
@@ -79,10 +77,29 @@ function App() {
                         alert("El valor ingresado debe ser numérico");
                       }
                   }}  className="btb btn-dark">Referencia</button>
+                </div>              
+
+                <h5 className="card-title pt-3 mx-auto">
+                  Parámetros del controlador
+                </h5>
+
+                <div className="input-group flex-nowrap">                  
+                  <input type="text" className="form-control" placeholder="Kp" aria-label="Username" aria-describedby="addon-wrapping" />                 
+                  
+                  <input type="text" className="form-control" placeholder="Ki" aria-label="Username" aria-describedby="addon-wrapping" />
+                  
+                  <input type="text" className="form-control" placeholder="Kd" aria-label="Username" aria-describedby="addon-wrapping" />
+                  <div className="input-group-prepend">
+                  <button type="button" id="button-addon2" onClick={() => {console.log("Melo")}}  className="btb btn-dark">Establecer</button>
+                  </div>
+
                 </div>
-              </div>
-                
-                
+
+                <h5 className="card-title pt-3 mx-auto">Visualización de la planta </h5>
+
+                <img className='mx-auto' alt="" src="http://192.168.1.100:5000/video" width={300} height={275} />
+
+              </div>               
                 
               </div>
             </div>
@@ -91,11 +108,31 @@ function App() {
           <div className="col-sm-8">
             <div className="card">
               <div className="card-body">
+                
+              <div className="row text-right">
+                <div className="col-sm-4 mx-auto">
+                  <p>Salida de la planta: {data} V</p>
+                </div>
+                <div className="col-sm-4 mx-auto">
+                  <button className="btn btn-dark mr-6 mb-3" onClick={() => {
+                      
+                      if (!start) {
+                        startTransmission();
+                      }
+                      else {
+                        stopTransmission();
+                      }
+                    }}>
+                    {start ? <FontAwesomeIcon icon={faStop} /> : <FontAwesomeIcon icon={faPlay} />} 
+                    </button>
+                </div>
+              </div>
+
                 <Plot
                   useResizeHandler={true}
                   data={[
                     {
-                      y: data2,
+                      y: referencia,
                       type: "line",
                     },
                   ]}
@@ -103,14 +140,26 @@ function App() {
                     width: "50%",
                     height: "50%",
                     title: "Respuesta de la planta",
+                    xaxis: {
+                      title: "Tiempo (x 0.1 s)",
+                      titlefont: {                        
+                        size: 15,
+                        color: "#7f7f7f"
+                      }},
+                    yaxis: {
+                      title: "Tensión (V)",
+                      titlefont: {                        
+                        size: 15,
+                        color: "#7f7f7f"
+                      }}            
                   }}
                 />
               </div>
             </div>
           </div>
-        </div>
+        </div>       
 
-        <div className="card-deck">
+        <div className="card-deck pt-3">
           <div className="card">
             <div className="card-body">
               <h5 className="card-title">Relevador 1</h5>
