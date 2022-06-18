@@ -7,11 +7,14 @@ import { faPlay, faStop } from '@fortawesome/free-solid-svg-icons'
 
 import Navbar from './components/Navbar';
 const socket = io.connect('http://192.168.1.100:5001');
-
+const socket_video = io.connect('http://192.168.1.100:5000');
 function App() {  
 
   const [data, setData] = useState(0.0);
-  const [referencia, setReferencia] = useState([]);
+  
+  const [plantaOut, setPlantaOut] = useState([]);
+  const [plantaIn, setPlantaIn] = useState([]); 
+  const [reference, setReference] = useState(''); 
   
   const [relay_1, setRelay_1] = useState(0);
   const [relay_2, setRelay_2] = useState(0);
@@ -19,16 +22,29 @@ function App() {
 
   const [start, setStart] = useState(false);
 
-  const [reference, setReference] = useState('');
+  
+
+  const [videoStraming, setVideoStraming] = useState([""]);
 
   // 1. listen for data from the server (Raspberry Pi)
   useEffect(() => {
     socket.on('/v1.0/iot-control/get_status_controller', (res) => {
-      setReferencia(currentData => [...currentData, res.adc_value]);
+      setPlantaOut(currentData => [...currentData, res.adc_value]);
+      setPlantaIn(currentData => [...currentData, res.dac_value]);
       setData(res.adc_value);
       setStart(res.transmition_status);
-    });   
+    });
+  
+    
+  
   }, []);
+
+  socket_video.emit('/v1.0/iot-control/video_stream', {
+    message: 'Iniciando transmisición'});
+
+  socket_video.on('/v1.0/iot-control/res_video_stream', (res) => {    
+    setVideoStraming("data:image/jpeg;base64,"+res);
+  });
 
   
 
@@ -97,7 +113,7 @@ function App() {
 
                 <h5 className="card-title pt-3 mx-auto">Visualización de la planta </h5>
 
-                <img className='mx-auto' alt="" src="http://192.168.1.100:5000/video" width={300} height={275} />
+                <img className='mx-auto' alt="" src={videoStraming} width={300} height={275} />
 
               </div>               
                 
@@ -132,16 +148,23 @@ function App() {
                   useResizeHandler={true}
                   data={[
                     {
-                      y: referencia,
+                      y: plantaIn,
                       type: "line",
+                      name: 'Referencia'
                     },
+                    {
+                      y: plantaOut,
+                      type: "line",
+                      name: 'Salida'
+                    }
+
                   ]}
                   layout={{
                     width: "50%",
                     height: "50%",
                     title: "Respuesta de la planta",
                     xaxis: {
-                      title: "Tiempo (x 0.1 s)",
+                      title: "Tiempo (x 0.01 s)",
                       titlefont: {                        
                         size: 15,
                         color: "#7f7f7f"
