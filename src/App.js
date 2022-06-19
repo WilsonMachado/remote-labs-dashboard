@@ -30,6 +30,10 @@ function App() {
 
   const [videoStraming, setVideoStraming] = useState([""]);
 
+  const [kc, setKc] = useState(0.0);
+  const [tau_i, setTau_i] = useState(0.0);
+  const [tau_d, setTau_d] = useState(0.0);
+
   // 1. listen for data from the server (Raspberry Pi)
   useEffect(() => {
     socket.on('/v1.0/iot-control/get_status_controller', (res) => {
@@ -147,13 +151,29 @@ function App() {
                 </h5>
 
                 <div className="input-group flex-nowrap">                  
-                  <input type="text" className="form-control" placeholder="Kc" aria-label="Username" aria-describedby="addon-wrapping" />                 
+                  <input type="text" className="form-control" placeholder="Kc" aria-label="Username" aria-describedby="addon-wrapping" onChange={(event) => setKc(event.target.value)} />                 
                   
-                  <input type="text" className="form-control" placeholder="𝜏ᵢ" aria-label="Username" aria-describedby="addon-wrapping" />
+                  <input type="text" className="form-control" placeholder="𝜏ᵢ" aria-label="Username" aria-describedby="addon-wrapping" onChange={(event) => setTau_i(event.target.value)} />
                   
-                  <input type="text" className="form-control" placeholder="𝜏d" aria-label="Username" aria-describedby="addon-wrapping" />
+                  <input type="text" className="form-control" placeholder="𝜏d" aria-label="Username" aria-describedby="addon-wrapping" onChange={(event) => setTau_d(event.target.value)} />
+
                   <div className="input-group-prepend">
-                  <button type="button" id="button-addon2" onClick={() => {console.log("Melo")}}  className="btb btn-dark">Establecer</button>
+                  <button type="button" id="button-addon2" onClick={(event) => {
+                    event.preventDefault();
+                    let aux_kc = parseFloat(kc);
+                    let aux_tau_i = parseFloat(tau_i);
+                    let aux_tau_d = parseFloat(tau_d);
+                    if ((!isNaN(aux_kc)) && (!isNaN(aux_tau_i)) && (!isNaN(aux_tau_d)) ) {
+                      socket.emit('/v1.0/iot-control/set_controller_parameters', {
+                        kc: aux_kc,
+                        tau_i: aux_tau_i,
+                        tau_d: aux_tau_d
+                      });                    
+                    }else {
+                      alert("Todos los parámetros del controlador deben ser numéricos.");
+                    }
+
+                  }}  className="btb btn-dark">Establecer</button>
                   </div>
 
                 </div>
