@@ -8,6 +8,10 @@ import { faPlay, faStop } from '@fortawesome/free-solid-svg-icons'
 import Navbar from './components/Navbar';
 const socket = io.connect('http://192.168.1.100:5001');
 const socket_video = io.connect('http://192.168.1.100:5000');
+
+socket_video.emit('/v1.0/iot-control/video_stream', {
+  message: 'Iniciando transmisición'});  
+
 function App() {  
 
   const [data, setData] = useState(0.0);
@@ -21,8 +25,8 @@ function App() {
   const [relay_3, setRelay_3] = useState(0);
 
   const [start, setStart] = useState(false);
-
-  
+  const [startStreamingVideo, setStartStreamingVideo] = useState(false);
+  const [cerrarLazo, setcerrarLazo] = useState(false);  
 
   const [videoStraming, setVideoStraming] = useState([""]);
 
@@ -30,23 +34,22 @@ function App() {
   useEffect(() => {
     socket.on('/v1.0/iot-control/get_status_controller', (res) => {
       setPlantaOut(currentData => [...currentData, res.adc_value]);
-      setPlantaIn(currentData => [...currentData, res.dac_value]);
+      setPlantaIn(currentData => [...currentData, res.referencia]);
       setData(res.adc_value);
       setStart(res.transmition_status);
     });
   
-    
+  }, []); 
+
+  socket_video.on('/v1.0/iot-control/video_stream_status', (res) => {
+    console.log(res);
+    setStartStreamingVideo(res.message);
+  });
   
-  }, []);
-
-  socket_video.emit('/v1.0/iot-control/video_stream', {
-    message: 'Iniciando transmisición'});
-
+  
   socket_video.on('/v1.0/iot-control/res_video_stream', (res) => {    
     setVideoStraming("data:image/jpeg;base64,"+res);
-  });
-
-  
+  });      
 
   const startTransmission = () => {
     socket.emit('/v1.0/iot-control/get_status_controller', {
@@ -57,6 +60,26 @@ function App() {
     socket.emit('/v1.0/iot-control/stop_get_status_controller', {
       message: 'Deteniendo transmisición'
     });
+  }
+
+  const startStreaming = () => {
+    socket_video.emit('/v1.0/iot-control/start_video_stream', {
+      message: 'Iniciando transmisición'}); 
+      
+    socket_video.on('/v1.0/iot-control/video_stream_status', (res) => {
+      console.log(res);
+      setStartStreamingVideo(res.message);
+    }); 
+  }
+
+  const stopStreaming = () => {
+    socket_video.emit('/v1.0/iot-control/stop_video_stream', {
+      message: 'Deteniendo transmisición'}); 
+
+    socket_video.on('/v1.0/iot-control/video_stream_status', (res) => {
+      console.log(res);
+      setStartStreamingVideo(res.message);
+    }); 
   }
 
   return (
@@ -111,7 +134,20 @@ function App() {
 
                 </div>
 
-                <h5 className="card-title pt-3 mx-auto">Visualización de la planta </h5>
+                <h5 className="card-title pt-3 mx-auto mt-2">Visualización de la planta </h5>               
+
+                <button className="btn btn-dark mr-6 mb-3 m-3" onClick={() => {
+                      
+                      if (!startStreamingVideo) {
+                        startStreaming();                        
+                      }
+                      else {
+                        stopStreaming();                        
+                      }
+                    }}>
+                      
+                    {startStreamingVideo ? <FontAwesomeIcon icon={faStop} /> : <FontAwesomeIcon icon={faPlay} />} 
+                    </button>
 
                 <img className='mx-auto' alt="" src={videoStraming} width={300} height={275} />
 
@@ -125,23 +161,35 @@ function App() {
             <div className="card">
               <div className="card-body">
                 
-              <div className="row text-right">
+              <div className="row text-center">
                 <div className="col-sm-4 mx-auto">
-                  <p>Salida de la planta: {data} V</p>
-                </div>
-                <div className="col-sm-4 mx-auto">
+                  
                   <button className="btn btn-dark mr-6 mb-3" onClick={() => {
                       
-                      if (!start) {
-                        startTransmission();
+                      if (!cerrarLazo) {
+                        console.log("Cerré el lazo")
                       }
                       else {
-                        stopTransmission();
+                        console.log("Abrí el lazo")
                       }
+                      setcerrarLazo(!cerrarLazo);
                     }}>
-                    {start ? <FontAwesomeIcon icon={faStop} /> : <FontAwesomeIcon icon={faPlay} />} 
+                    {cerrarLazo ? "Abrir Lazo" : "Cerrar Lazo"} 
                     </button>
                 </div>
+                  <div className="col-sm-4 mx-auto text-right">                  
+                    <p className='mr-6'>Salida de la planta: {data} V</p>
+                      <button className="btn btn-dark mr-6 mb-3" onClick={() => {                        
+                          if (!start) {
+                            startTransmission();
+                          }
+                          else {
+                            stopTransmission();
+                          }
+                        }}>
+                        {start ? <FontAwesomeIcon icon={faStop} /> : <FontAwesomeIcon icon={faPlay} />} 
+                      </button>
+                  </div>
               </div>
 
                 <Plot
@@ -150,8 +198,9 @@ function App() {
                     {
                       y: plantaIn,
                       type: "line",
-                      name: 'Referencia'
+                      name: 'Entrada'
                     },
+                    
                     {
                       y: plantaOut,
                       type: "line",
@@ -164,7 +213,7 @@ function App() {
                     height: "50%",
                     title: "Respuesta de la planta",
                     xaxis: {
-                      title: "Tiempo (x 0.01 s)",
+                      title: "Tiempo (x 0.001 s)",
                       titlefont: {                        
                         size: 15,
                         color: "#7f7f7f"
