@@ -36,25 +36,24 @@ function App() {
       setPlantaOut(currentData => [...currentData, res.adc_value]);
       setPlantaIn(currentData => [...currentData, res.referencia]);
       setData(res.adc_value);
-      setStart(res.transmition_status);
+      setStart(res.transmition_status);      
     });
-  
-  }, []); 
 
-  socket_video.on('/v1.0/iot-control/video_stream_status', (res) => {
-    console.log(res);
-    setStartStreamingVideo(res.message);
-  });
-  
-  
-  socket_video.on('/v1.0/iot-control/res_video_stream', (res) => {    
-    setVideoStraming("data:image/jpeg;base64,"+res);
-  });      
+    socket.emit('/v1.0/iot-control/get_closed_loop', {
+      message: 'Cerrando lazo'}); 
+
+    socket.emit('/v1.0/iot-control/get_status_relay', {
+      message: 'Obteniendo estado de los relevadores'}); 
+    
+  }, []);
+
+    /////////////////////////////// TRANSMISION DE DATOS ///////////////////////////////
 
   const startTransmission = () => {
     socket.emit('/v1.0/iot-control/get_status_controller', {
       message: 'Iniciando transmisición'});      
   }
+
 
   const stopTransmission = () => {
     socket.emit('/v1.0/iot-control/stop_get_status_controller', {
@@ -62,12 +61,14 @@ function App() {
     });
   }
 
+  ////////////////////////////////////////////////////////////////////////////////////////
+
+  /////////////////////////////// TRANSMISION DE VIDEO ///////////////////////////////
   const startStreaming = () => {
     socket_video.emit('/v1.0/iot-control/start_video_stream', {
       message: 'Iniciando transmisición'}); 
       
     socket_video.on('/v1.0/iot-control/video_stream_status', (res) => {
-      console.log(res);
       setStartStreamingVideo(res.message);
     }); 
   }
@@ -77,10 +78,33 @@ function App() {
       message: 'Deteniendo transmisición'}); 
 
     socket_video.on('/v1.0/iot-control/video_stream_status', (res) => {
-      console.log(res);
       setStartStreamingVideo(res.message);
     }); 
   }
+
+  socket_video.on('/v1.0/iot-control/video_stream_status', (res) => { 
+    setStartStreamingVideo(res.message);
+  }); 
+
+  socket_video.on('/v1.0/iot-control/res_video_stream', (res) => {    
+    setVideoStraming("data:image/jpeg;base64,"+res);
+  });   
+
+  ////////////////////////////////////////////////////////////////////////////////////////
+
+  /////////////////////////////// CERRAR LAZO ///////////////////////////////   
+
+  socket.on('/v1.0/iot-control/get_closed_loop', (res) => {
+    setcerrarLazo(res.closed_loop);
+  });
+
+  socket.on('/v1.0/iot-control/get_status_relay', (res) => {
+    setRelay_1(res.status_relay_1);
+    setRelay_2(res.status_relay_2);
+    setRelay_3(res.status_relay_3);
+  });
+
+
 
   return (
     <>
@@ -123,11 +147,11 @@ function App() {
                 </h5>
 
                 <div className="input-group flex-nowrap">                  
-                  <input type="text" className="form-control" placeholder="Kp" aria-label="Username" aria-describedby="addon-wrapping" />                 
+                  <input type="text" className="form-control" placeholder="Kc" aria-label="Username" aria-describedby="addon-wrapping" />                 
                   
-                  <input type="text" className="form-control" placeholder="Ki" aria-label="Username" aria-describedby="addon-wrapping" />
+                  <input type="text" className="form-control" placeholder="𝜏ᵢ" aria-label="Username" aria-describedby="addon-wrapping" />
                   
-                  <input type="text" className="form-control" placeholder="Kd" aria-label="Username" aria-describedby="addon-wrapping" />
+                  <input type="text" className="form-control" placeholder="𝜏d" aria-label="Username" aria-describedby="addon-wrapping" />
                   <div className="input-group-prepend">
                   <button type="button" id="button-addon2" onClick={() => {console.log("Melo")}}  className="btb btn-dark">Establecer</button>
                   </div>
@@ -164,16 +188,12 @@ function App() {
               <div className="row text-center">
                 <div className="col-sm-4 mx-auto">
                   
-                  <button className="btn btn-dark mr-6 mb-3" onClick={() => {
-                      
-                      if (!cerrarLazo) {
-                        console.log("Cerré el lazo")
-                      }
-                      else {
-                        console.log("Abrí el lazo")
-                      }
-                      setcerrarLazo(!cerrarLazo);
-                    }}>
+                  <button className="btn btn-dark mr-6 mb-3" onClick={() => {                      
+                      socket.emit('/v1.0/iot-control/set_closed_loop', {
+                        message: 'Closed Loop'
+                      });
+                      socket.emit('/v1.0/iot-control/get_closed_loop', {message: 'Closed Loop'});
+                      }}>
                     {cerrarLazo ? "Abrir Lazo" : "Cerrar Lazo"} 
                     </button>
                 </div>
@@ -213,7 +233,7 @@ function App() {
                     height: "50%",
                     title: "Respuesta de la planta",
                     xaxis: {
-                      title: "Tiempo (x 0.001 s)",
+                      title: "Tiempo (x 0.01 s)",
                       titlefont: {                        
                         size: 15,
                         color: "#7f7f7f"
