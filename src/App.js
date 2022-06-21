@@ -18,7 +18,7 @@ function App() {
   
   const [plantaOut, setPlantaOut] = useState([]);
   const [plantaIn, setPlantaIn] = useState([]); 
-  const [reference, setReference] = useState(''); 
+  const [reference, setReference] = useState('');
   
   const [relay_1, setRelay_1] = useState(0);
   const [relay_2, setRelay_2] = useState(0);
@@ -37,8 +37,11 @@ function App() {
   // 1. listen for data from the server (Raspberry Pi)
   useEffect(() => {
     socket.on('/v1.0/iot-control/get_status_controller', (res) => {
+
       setPlantaOut(currentData => [...currentData, res.adc_value]);
       setPlantaIn(currentData => [...currentData, res.referencia]);
+      
+
       setData(res.adc_value);
       setStart(res.transmition_status);      
     });
@@ -151,7 +154,7 @@ function App() {
                 </h5>
 
                 <div className="input-group flex-nowrap">                  
-                  <input type="text" className="form-control" placeholder="Kc" aria-label="Username" aria-describedby="addon-wrapping" onChange={(event) => setKc(event.target.value)} />                 
+                  <input type="text" className="form-control" placeholder="Kp" aria-label="Username" aria-describedby="addon-wrapping" onChange={(event) => setKc(event.target.value)} />                 
                   
                   <input type="text" className="form-control" placeholder="𝜏ᵢ" aria-label="Username" aria-describedby="addon-wrapping" onChange={(event) => setTau_i(event.target.value)} />
                   
@@ -259,6 +262,7 @@ function App() {
                         color: "#7f7f7f"
                       }},
                     yaxis: {
+                      range: [-10, 10],
                       title: "Tensión (V)",
                       titlefont: {                        
                         size: 15,
