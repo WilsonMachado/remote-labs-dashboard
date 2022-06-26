@@ -6,11 +6,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPlay, faStop } from '@fortawesome/free-solid-svg-icons'
 
 import Navbar from './components/Navbar';
-const socket = io.connect('http://192.168.1.100:5001');
-const socket_video = io.connect('http://192.168.1.100:5000');
+const socket = io.connect('http://eieela.univalle.edu.co:5023');
 
-socket_video.emit('/v1.0/iot-control/video_stream', {
-  message: 'Iniciando transmisición'});  
 
 function App() {  
 
@@ -25,10 +22,10 @@ function App() {
   const [relay_3, setRelay_3] = useState(0);
 
   const [start, setStart] = useState(false);
-  const [startStreamingVideo, setStartStreamingVideo] = useState(false);
+
   const [cerrarLazo, setcerrarLazo] = useState(false);  
 
-  const [videoStraming, setVideoStraming] = useState([""]);
+
 
   const [kc, setKc] = useState(0.0);
   const [tau_i, setTau_i] = useState(0.0);
@@ -68,36 +65,7 @@ function App() {
     });
   }
 
-  ////////////////////////////////////////////////////////////////////////////////////////
-
-  /////////////////////////////// TRANSMISION DE VIDEO ///////////////////////////////
-  const startStreaming = () => {
-    socket_video.emit('/v1.0/iot-control/start_video_stream', {
-      message: 'Iniciando transmisición'}); 
-      
-    socket_video.on('/v1.0/iot-control/video_stream_status', (res) => {
-      setStartStreamingVideo(res.message);
-    }); 
-  }
-
-  const stopStreaming = () => {
-    socket_video.emit('/v1.0/iot-control/stop_video_stream', {
-      message: 'Deteniendo transmisición'}); 
-
-    socket_video.on('/v1.0/iot-control/video_stream_status', (res) => {
-      setStartStreamingVideo(res.message);
-    }); 
-  }
-
-  socket_video.on('/v1.0/iot-control/video_stream_status', (res) => { 
-    setStartStreamingVideo(res.message);
-  }); 
-
-  socket_video.on('/v1.0/iot-control/res_video_stream', (res) => {    
-    setVideoStraming("data:image/jpeg;base64,"+res);
-  });   
-
-  ////////////////////////////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////////////////////////////  
 
   /////////////////////////////// CERRAR LAZO ///////////////////////////////   
 
@@ -181,22 +149,9 @@ function App() {
 
                 </div>
 
-                <h5 className="card-title pt-3 mx-auto mt-2">Visualización de la planta </h5>               
+                <h5 className="card-title pt-3 mx-auto mt-2">Visualización de la planta </h5>
 
-                <button className="btn btn-dark mr-6 mb-3 m-3" onClick={() => {
-                      
-                      if (!startStreamingVideo) {
-                        startStreaming();                        
-                      }
-                      else {
-                        stopStreaming();                        
-                      }
-                    }}>
-                      
-                    {startStreamingVideo ? <FontAwesomeIcon icon={faStop} /> : <FontAwesomeIcon icon={faPlay} />} 
-                    </button>
-
-                <img className='mx-auto' alt="" src={videoStraming} width={300} height={275} />
+               <iframe  title='video' style={{maxWidth:640, width:'100%', height:310, overflow:'auto'}} src="http://eieela.univalle.edu.co:5024" frameborder="0" />
 
               </div>               
                 
