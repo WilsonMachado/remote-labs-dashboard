@@ -12,6 +12,7 @@
     "@types/react-latex": "^2.0.0",
     "plotly.js": "^2.12.1",
     "react": "^18.1.0",
+    "react-csv": "^2.2.2",
     "react-dom": "^18.1.0",
     "react-latex": "^2.0.0",
     "react-plotly.js": "^2.5.1",
