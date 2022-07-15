@@ -14,7 +14,8 @@ function App() {
   const [data, setData] = useState(0.0);
   
   const [plantaOut, setPlantaOut] = useState([]);
-  const [plantaIn, setPlantaIn] = useState([]); 
+  const [plantaIn, setPlantaIn] = useState([]);
+  const [muK, setMuK] = useState([]);
   const [reference, setReference] = useState('');
   
   const [relay_1, setRelay_1] = useState(0);
@@ -37,6 +38,7 @@ function App() {
 
       setPlantaOut(currentData => [...currentData, res.adc_value]);
       setPlantaIn(currentData => [...currentData, res.referencia]);
+      setMuK(currentData => [...currentData, res.mu_k]);
       
 
       setData(res.adc_value);
@@ -256,6 +258,11 @@ function App() {
                       y: plantaOut,
                       type: "line",
                       name: 'Salida'
+                    },
+                    {
+                      y: muK,
+                      type: "line",
+                      name: 'Esfuerzo de control'
                     }
 
                   ]}
